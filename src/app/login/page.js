@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { auth, db } from '../../lib/firebase';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, setPersistence, browserSessionPersistence } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import './login.css';
 
@@ -26,6 +26,8 @@ export default function Login() {
     e.preventDefault();
     setErrorHeader('');
     try {
+      // Isolate session strictly to this tab so multiple tabs can have different users
+      await setPersistence(auth, browserSessionPersistence);
       await signInWithEmailAndPassword(auth, signInEmail, signInPassword);
       console.log("Sign In successful!");
       router.push('/dashboard');
@@ -39,6 +41,8 @@ export default function Login() {
     e.preventDefault();
     setErrorHeader('');
     try {
+      // Isolate session strictly to this tab
+      await setPersistence(auth, browserSessionPersistence);
       const userCredential = await createUserWithEmailAndPassword(auth, signUpEmail, signUpPassword);
       const user = userCredential.user;
       
