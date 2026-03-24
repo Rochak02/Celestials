@@ -1,10 +1,16 @@
 "use client";
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { auth, db } from '../../lib/firebase';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 import './login.css';
 
 export default function Login() {
+  const router = useRouter();
   const [isRightPanelActive, setIsRightPanelActive] = useState(false);
+  const [errorHeader, setErrorHeader] = useState('');
   
   // Sign In states
   const [signInEmail, setSignInEmail] = useState('');
@@ -15,16 +21,40 @@ export default function Login() {
   const [signUpEmail, setSignUpEmail] = useState('');
   const [signUpPassword, setSignUpPassword] = useState('');
 
-  const handleSignIn = (e) => {
+  const handleSignIn = async (e) => {
     e.preventDefault();
-    console.log("Sign In attempted for:", signInEmail);
-    // TODO: Implement Firebase Auth handleSignIn
+    setErrorHeader('');
+    try {
+      await signInWithEmailAndPassword(auth, signInEmail, signInPassword);
+      console.log("Sign In successful!");
+      router.push('/dashboard');
+    } catch (error) {
+      console.error("Sign In Error:", error);
+      setErrorHeader("Invalid Credentials. " + error.message.replace('Firebase:', ''));
+    }
   };
 
-  const handleSignUp = (e) => {
+  const handleSignUp = async (e) => {
     e.preventDefault();
-    console.log("Sign Up attempted for:", signUpEmail);
-    // TODO: Implement Firebase Auth handleSignUp
+    setErrorHeader('');
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, signUpEmail, signUpPassword);
+      const user = userCredential.user;
+      
+      // Save name to Firestore
+      await setDoc(doc(db, "users", user.uid), {
+        name: signUpName,
+        email: signUpEmail,
+        role: "student", // Default role assigned
+        createdAt: new Date()
+      });
+      
+      console.log("Sign Up successful!");
+      router.push('/dashboard');
+    } catch (error) {
+      console.error("Sign Up Error:", error);
+      setErrorHeader("Failed to Sign Up. " + error.message.replace('Firebase:', ''));
+    }
   };
 
   return (
@@ -36,6 +66,7 @@ export default function Login() {
           <form onSubmit={handleSignUp}>
             <h1>Create Account</h1>
             <span>Register your personal details to use features</span>
+            {errorHeader && isRightPanelActive && <p className="error-text" style={{color: '#fca5a5', fontSize: '13px', marginTop: '10px'}}>{errorHeader}</p>}
             <input 
               type="text" 
               placeholder="Name" 
@@ -44,8 +75,8 @@ export default function Login() {
               required
             />
             <input 
-              type="text" 
-              placeholder="Username / Email" 
+              type="email" 
+              placeholder="Email" 
               value={signUpEmail}
               onChange={(e) => setSignUpEmail(e.target.value)}
               required
@@ -65,10 +96,11 @@ export default function Login() {
         <div className="form-container sign-in-container">
           <form onSubmit={handleSignIn}>
             <h1>Sign In</h1>
-            <p className="subtitle">Enter your username and password</p>
+            <p className="subtitle">Enter your email and password</p>
+            {errorHeader && !isRightPanelActive && <p className="error-text" style={{color: '#fca5a5', fontSize: '13px', marginTop: '10px'}}>{errorHeader}</p>}
             <input 
-              type="text" 
-              placeholder="Username" 
+              type="email" 
+              placeholder="Email" 
               value={signInEmail}
               onChange={(e) => setSignInEmail(e.target.value)}
               required
@@ -90,12 +122,12 @@ export default function Login() {
             <div className="overlay-panel overlay-left">
               <h1>Welcome Back!</h1>
               <p>To keep connected with us please login with your personal info</p>
-              <button className="ghost-btn" onClick={() => setIsRightPanelActive(false)}>Sign In</button>
+              <button type="button" className="ghost-btn" onClick={() => { setIsRightPanelActive(false); setErrorHeader(''); }}>Sign In</button>
             </div>
             <div className="overlay-panel overlay-right">
               <h1>Hello, Friend!</h1>
               <p>Register with your personal details to use all of the site features</p>
-              <button className="ghost-btn" onClick={() => setIsRightPanelActive(true)}>SIGN UP</button>
+              <button type="button" className="ghost-btn" onClick={() => { setIsRightPanelActive(true); setErrorHeader(''); }}>SIGN UP</button>
             </div>
           </div>
         </div>
