@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { auth, db } from '../../lib/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc, collection, query, where, getDocs, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, setDoc } from 'firebase/firestore';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -61,9 +61,9 @@ export default function Dashboard() {
   const applyForRfid = async () => {
     try {
       if (!user) return;
-      await updateDoc(doc(db, "users", user.uid), {
+      await setDoc(doc(db, "users", user.uid), {
         rfidStatus: "pending"
-      });
+      }, { merge: true });
       setUserData(prev => ({ ...prev, rfidStatus: "pending" }));
       alert("Applied for RFID Card successfully! Waiting for Warden approval.");
     } catch (e) {
@@ -94,11 +94,11 @@ export default function Dashboard() {
     }
 
     try {
-      await updateDoc(doc(db, "users", studentId), {
+      await setDoc(doc(db, "users", studentId), {
         rfidStatus: "assigned",
         rfidTag: rfidInput,
         roomNo: roomInput
-      });
+      }, { merge: true });
       
       // Local state update immediately
       setStudents(prev => prev.map(s => s.id === studentId ? { ...s, rfidStatus: "assigned", rfidTag: rfidInput, roomNo: roomInput } : s));
