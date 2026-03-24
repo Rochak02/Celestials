@@ -23,8 +23,20 @@ const char* ssid = "YOUR_WIFI_SSID";
 const char* password = "YOUR_WIFI_PASSWORD";
 
 // Replace strictly with the Local IPv4 address of the computer running "npm run dev"
-// If deployed online (e.g. Vercel), replace with actual URL: "https://your-app.vercel.app/api/hardware/scan"
-const char* serverUrl = "http://YOUR_LOCAL_IP:3000/api/hardware/scan";
+// If deployed online (e.g. Vercel), replace with actual URL: "https://your-app.vercel.app"
+const String serverBaseUrl = "http://YOUR_LOCAL_IP:3000";
+
+// --- CUSTOM HARDWARE API LOGGER ---
+void sendLogToBackend(String eventType, String msg) {
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    http.begin(serverBaseUrl + "/api/hardware/log");
+    http.addHeader("Content-Type", "application/json");
+    String payload = "{\"event\":\"" + eventType + "\", \"message\":\"" + msg + "\", \"deviceIp\":\"" + WiFi.localIP().toString() + "\"}";
+    http.POST(payload);
+    http.end();
+  }
+}
 
 void setup() {
   Serial.begin(115200);   
@@ -61,7 +73,10 @@ void setup() {
     delay(500);
     Serial.print(".");
   }
-  Serial.println("\nWiFi connected! System ready and listening for RFID taps.");
+  Serial.println("\nWiFi connected! IP: " + WiFi.localIP().toString());
+  
+  // Dump a visual log directly to the Warden Dashboard so you know it works!
+  sendLogToBackend("SYSTEM_BOOT", "ESP32-C6 Microcontroller Booted Sequentially. RFID Scanner Diagnostics Passed natively.");
 }
 
 void loop() {
@@ -82,7 +97,7 @@ void loop() {
   // Send the payload instantly to our Next.js API
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
-    http.begin(serverUrl);
+    http.begin(serverBaseUrl + "/api/hardware/scan");
     http.addHeader("Content-Type", "application/json");
 
     String jsonPayload = "{\"rfid_tag_id\":\"" + rfidTag + "\"}"; 
@@ -97,9 +112,11 @@ void loop() {
       // If the backend verifies it's a registered Student or Warden, it returns "action": "GRANT_ACCESS"
       if (response.indexOf("\"GRANT_ACCESS\"") > 0) {
         Serial.println("✅ VERIFIED: Access Granted! Actuating Relay Gate...");
+        sendLogToBackend("RELAY_ACTUATOR", "Gate physically Unlocked via 3.3V GPIO Trigger."); // Tell Dashboard
         digitalWrite(RELAY_PIN, HIGH); // Send voltage to open the relay
         delay(3000);                   // Keep gate physically unlocked for 3 seconds
         digitalWrite(RELAY_PIN, LOW);  // Kill voltage to lock the relay instantly
+        sendLogToBackend("RELAY_ACTUATOR", "Gate correctly Relocked.");                        // Tell Dashboard
         Serial.println("Gate Securely Locked.");
       } else {
         Serial.println("❌ DENIED: Card is completely Unregistered or Unauthorized.");

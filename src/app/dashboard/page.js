@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { auth, db } from '../../lib/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, collection, query, where, onSnapshot, setDoc } from 'firebase/firestore';
+import { doc, collection, query, where, onSnapshot, setDoc, orderBy, limit } from 'firebase/firestore';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -18,6 +18,7 @@ export default function Dashboard() {
   const [rfidInput, setRfidInput] = useState('');
   const [roomInput, setRoomInput] = useState('');
   const [wardenRfidInput, setWardenRfidInput] = useState('');
+  const [hardwareLogs, setHardwareLogs] = useState([]);
   
   // Real-time Mess Voting State
   const [menuVotes, setMenuVotes] = useState({ pizza: 0, pasta: 0, burger: 0, salad: 0 });
@@ -31,6 +32,7 @@ export default function Dashboard() {
   useEffect(() => {
     let unsubscribeUser = null;
     let unsubscribeStudents = null;
+    let unsubscribeLogs = null;
 
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
@@ -70,6 +72,14 @@ export default function Dashboard() {
                   setStudents(studentsList);
                   setMenuVotes(votes);
                 });
+
+                // Attach Live Hardware Terminal Logs Listener
+                const logsQ = query(collection(db, "hardwareLogs"), orderBy("timestamp", "desc"), limit(20));
+                unsubscribeLogs = onSnapshot(logsQ, (snapshot) => {
+                   const logsList = [];
+                   snapshot.forEach(logDoc => logsList.push({ id: logDoc.id, ...logDoc.data() }));
+                   setHardwareLogs(logsList);
+                });
               }
             } else {
               // Document doesn't exist at all? Create the absolute baseline
@@ -94,6 +104,7 @@ export default function Dashboard() {
       unsubscribeAuth();
       if (unsubscribeUser) unsubscribeUser();
       if (unsubscribeStudents) unsubscribeStudents();
+      if (unsubscribeLogs) unsubscribeLogs();
     };
   }, [router]);
 
@@ -277,6 +288,28 @@ export default function Dashboard() {
             <button type="submit" style={{ padding: '12px 24px', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>Link to My Warden Profile</button>
           </form>
           {userData?.rfidTag && <p style={{color: '#10b981', marginTop: '15px', fontWeight: 'bold', fontFamily: 'monospace'}}>✅ Active Universal Key: {userData.rfidTag}</p>}
+        </div>
+
+        {/* Live Hardware Terminal Output */}
+        <div style={{ marginTop: '40px' }}>
+          <h2 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 10px #10b981' }} />
+            Live ESP32 Hardware Diagnostics Terminal
+          </h2>
+          <div style={{ background: '#000000', padding: '24px', borderRadius: '12px', border: '1px solid #333', fontFamily: 'monospace', height: '350px', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+            {hardwareLogs.length === 0 ? (
+              <p style={{ color: '#10b981', margin: 0 }}>Waiting for first ESP32 hardware transmission...</p>
+            ) : (
+              hardwareLogs.map(log => (
+                <div key={log.id} style={{ marginBottom: '10px', fontSize: '14px', lineHeight: '1.4', color: log.event.includes('DENY') || log.event.includes('ERROR') ? '#ef4444' : log.event.includes('GRANT') || log.event.includes('BOOT') ? '#10b981' : '#38bdf8' }}>
+                  <span style={{ color: '#64748b' }}>[{log.timestamp?.toDate().toLocaleTimeString() || "..."}]</span> 
+                  <span style={{ fontWeight: 'bold', margin: '0 10px' }}>[{log.event}]</span> 
+                  {log.message}
+                  {log.deviceIp ? <span style={{ color: '#f59e0b', marginLeft: '10px' }}>(Node IP: {log.deviceIp})</span> : null}
+                </div>
+              ))
+            )}
+          </div>
         </div>
 
         {/* Live Directory */}

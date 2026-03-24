@@ -16,6 +16,14 @@ export async function POST(request) {
     const qs = await getDocs(q);
     
     if (qs.empty) {
+      // Log failed scan visually to the Warden's new terminal
+      await addDoc(collection(db, "hardwareLogs"), {
+        event: "SCAN_DENIED",
+        rfidTag: rfid_tag_id,
+        message: `Unregistered Master/Student Card Tapped: ${rfid_tag_id}`,
+        timestamp: new Date()
+      });
+
       // Hardware Relay stays SHUT
       return NextResponse.json({ success: false, action: "DENY", message: "UNREGISTERED_TAG" }, { status: 404 });
     }
@@ -41,6 +49,15 @@ export async function POST(request) {
       parentNumber: student.parentNumber || "none",
       action: newStatus ? "ENTER" : "EXIT",
       hardwareTagId: rfid_tag_id,
+      timestamp: new Date()
+    });
+
+    // Write a Visual Live Terminal Log for the Warden Dashboard
+    await addDoc(collection(db, "hardwareLogs"), {
+      event: "SCAN_GRANTED",
+      rfidTag: rfid_tag_id,
+      studentName: student.name,
+      message: `Access Granted to ${student.name}. Relaying GATE UNLOCK command.`,
       timestamp: new Date()
     });
     
