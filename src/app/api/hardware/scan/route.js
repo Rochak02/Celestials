@@ -1,6 +1,7 @@
 import { db } from '../../../../lib/firebase'; 
 import { collection, query, where, getDocs, updateDoc, doc, addDoc } from 'firebase/firestore';
 import { NextResponse } from 'next/server';
+import whatsappClient from '../../../../lib/whatsapp'; 
 
 // ESP32 hits this POST endpoint automatically anytime an RFID tag is tapped natively on the scanner.
 export async function POST(request) {
@@ -52,39 +53,35 @@ export async function POST(request) {
       timestamp: new Date()
     });
 
-    // -- TELEGRAM BOT INTEGRATION --
-    // Only fire if the parent specified a valid Telegram Chat ID in their profile setup
+    // -- DIRECT WHATSAPP WEB INTEGRATION --
+    // Only fire if the parent specified a numeric mobile number
     if (student.parentPhone && student.parentPhone.toLowerCase() !== "none") {
       try {
         const actionWord = newStatus ? "ENTERED" : "LEFT";
         const timeString = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
         
-        // Use Markdown formatting natively inside Telegram! 
-        const telegramPayload = `🔔 *Hostel Gate Alert*\nYour child, *${student.name}*, has successfully *${actionWord}* the hostel securely at ${timeString}.`;
+        // Structure the WhatsApp Payload Native to the Client App API
+        const whatsappPayload = `🚨 *Hostel Gate Alert*\nYour child, *${student.name}*, has successfully *${actionWord}* the hostel securely at ${timeString}.`;
         
-        // ⚠️ REPLACE THIS STRING WITH YOUR BOTFATHER API TOKEN! Example: "123456789:ABCDEF..."
-        const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8448715814:AAFhBMWHLiJPk6aRIkw-ufOp9g0uXLJIVIE";
+        // Strip out any non-numeric characters from the string (like + or dashes)
+        const cleanNumber = student.parentPhone.replace(/\D/g, ''); 
         
-        // The Telegram send endpoint. 
-        const telegramUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+        // Web Whatsapp requires the ID in this exact syntax natively at the country code level
+        const whatsappId = `${cleanNumber}@c.us`; 
         
-        // Fire seamlessly natively from Node.js
-        await fetch(telegramUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-             chat_id: student.parentPhone, 
-             text: telegramPayload,
-             parse_mode: "Markdown"
-          })
-        });
+        // Securely blast the Headless Chromium DOM to send the encrypted message down the physical HTTP pipe
+        if (whatsappClient) {
+          await whatsappClient.sendMessage(whatsappId, whatsappPayload);
+          console.log(`WhatsApp securely blasted to Parent Phone: ${whatsappId}`);
+        } else {
+          console.warn("WhatsApp Client isn't initialized yet. Skipping Push.");
+        }
         
-        console.log("Transmission securely routed directly to Telegram Server!");
       } catch (err) {
-        console.error("Failed to route Telegram Push dynamically:", err);
+        console.error("Failed to route WhatsApp Push Headless API dynamically:", err);
       }
     }
-    // -- END TELEGRAM INTEGRATION --
+    // -- END WHATSAPP INTEGRATION --
 
     // Write a Visual Live Terminal Log for the Warden Dashboard
     await addDoc(collection(db, "hardwareLogs"), {
