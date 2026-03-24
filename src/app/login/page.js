@@ -20,6 +20,7 @@ export default function Login() {
   const [signUpName, setSignUpName] = useState('');
   const [signUpEmail, setSignUpEmail] = useState('');
   const [signUpPassword, setSignUpPassword] = useState('');
+  const [signUpAdminCode, setSignUpAdminCode] = useState('');
 
   const handleSignIn = async (e) => {
     e.preventDefault();
@@ -41,11 +42,18 @@ export default function Login() {
       const userCredential = await createUserWithEmailAndPassword(auth, signUpEmail, signUpPassword);
       const user = userCredential.user;
       
-      // Save name to Firestore
+      // Determine Role
+      let assignedRole = "student";
+      // Hidden secret to create a Warden test account
+      if (signUpAdminCode === "SECRETWARDEN") {
+        assignedRole = "warden";
+      }
+
+      // Save user to Firestore
       await setDoc(doc(db, "users", user.uid), {
         name: signUpName,
         email: signUpEmail,
-        role: "student", // Default role assigned
+        role: assignedRole,
         createdAt: new Date()
       });
       
@@ -87,6 +95,13 @@ export default function Login() {
               value={signUpPassword}
               onChange={(e) => setSignUpPassword(e.target.value)}
               required
+            />
+            <input 
+              type="text" 
+              placeholder="Admin Code (Optional)" 
+              value={signUpAdminCode}
+              onChange={(e) => setSignUpAdminCode(e.target.value)}
+              style={{ padding: '8px 15px', color: '#9CA3AF', background: 'transparent', borderBottom: '1px solid rgba(255,255,255,0.2)', marginBottom: '10px', fontSize: '12px' }}
             />
             <button type="submit" className="solid-btn">Sign Up</button>
           </form>
