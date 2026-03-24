@@ -36,9 +36,21 @@ export default function Dashboard() {
         setUser(currentUser);
         try {
           // Listen to the current user's document in REAL-TIME (Instant UI Updates)
-          unsubscribeUser = onSnapshot(doc(db, "users", currentUser.uid), (docSnap) => {
+          unsubscribeUser = onSnapshot(doc(db, "users", currentUser.uid), async (docSnap) => {
             if (docSnap.exists()) {
               const data = docSnap.data();
+              
+              // SELF-HEALING DATA SYNC: 
+              // If an account was registered before role tracking, or bypassed creation, repair it instantly!
+              if (!data.role || !data.email) {
+                await setDoc(doc(db, "users", currentUser.uid), {
+                  role: data.role || "student",
+                  email: data.email || currentUser.email,
+                  name: data.name || "Student"
+                }, { merge: true });
+                return; // Let the new snapshot trigger render
+              }
+
               setUserData(data);
               
               // If warden, subscribe to all students in REAL-TIME
@@ -59,7 +71,13 @@ export default function Dashboard() {
                 });
               }
             } else {
-              setUserData(null); // Doc might have been deleted mid-session
+              // Document doesn't exist at all? Create the absolute baseline
+              await setDoc(doc(db, "users", currentUser.uid), {
+                role: "student",
+                email: currentUser.email,
+                name: "Student",
+                createdAt: new Date()
+              });
             }
           });
         } catch (error) {
