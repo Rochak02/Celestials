@@ -4,55 +4,100 @@ import { useState } from 'react';
 import './login.css';
 
 export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [isRightPanelActive, setIsRightPanelActive] = useState(false);
+  
+  // Sign In states
+  const [signInEmail, setSignInEmail] = useState('');
+  const [signInPassword, setSignInPassword] = useState('');
 
-  const handleLogin = (e) => {
+  // Sign Up states
+  const [signUpName, setSignUpName] = useState('');
+  const [signUpEmail, setSignUpEmail] = useState('');
+  const [signUpPassword, setSignUpPassword] = useState('');
+
+  const handleSignIn = (e) => {
     e.preventDefault();
-    console.log("Login attempted for:", email);
-    // TODO: Connect Firebase Auth here
+    console.log("Sign In attempted for:", signInEmail);
+    // TODO: Implement Firebase Auth handleSignIn
+  };
+
+  const handleSignUp = (e) => {
+    e.preventDefault();
+    console.log("Sign Up attempted for:", signUpEmail);
+    // TODO: Implement Firebase Auth handleSignUp
   };
 
   return (
-    <div className="login-container">
-      <div className="login-card">
-        <div className="login-header">
-          <h1>Welcome Back</h1>
-          <p>Login to the Hostel Operations Platform</p>
-        </div>
+    <div className="login-wrapper">
+      <div className={`container ${isRightPanelActive ? "right-panel-active" : ""}`} id="container">
         
-        <form onSubmit={handleLogin} className="login-form">
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
+        {/* Sign Up Form (Left when active) */}
+        <div className="form-container sign-up-container">
+          <form onSubmit={handleSignUp}>
+            <h1>Create Account</h1>
+            <span>Register your personal details to use features</span>
             <input 
-              type="email" 
-              id="email" 
-              placeholder="student@hostel.edu"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required 
+              type="text" 
+              placeholder="Name" 
+              value={signUpName}
+              onChange={(e) => setSignUpName(e.target.value)}
+              required
             />
-          </div>
-          
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
+            <input 
+              type="text" 
+              placeholder="Username / Email" 
+              value={signUpEmail}
+              onChange={(e) => setSignUpEmail(e.target.value)}
+              required
+            />
             <input 
               type="password" 
-              id="password" 
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required 
+              placeholder="Password" 
+              value={signUpPassword}
+              onChange={(e) => setSignUpPassword(e.target.value)}
+              required
             />
-          </div>
-          
-          <button type="submit" className="login-btn">
-            Sign In
-          </button>
-        </form>
+            <button type="submit" className="solid-btn">Sign Up</button>
+          </form>
+        </div>
         
-        <div className="login-footer">
-          <a href="#" className="forgot-password">Forgot Password?</a>
+        {/* Sign In Form (Left when inactive) */}
+        <div className="form-container sign-in-container">
+          <form onSubmit={handleSignIn}>
+            <h1>Sign In</h1>
+            <p className="subtitle">Enter your username and password</p>
+            <input 
+              type="text" 
+              placeholder="Username" 
+              value={signInEmail}
+              onChange={(e) => setSignInEmail(e.target.value)}
+              required
+            />
+            <input 
+              type="password" 
+              placeholder="Password" 
+              value={signInPassword}
+              onChange={(e) => setSignInPassword(e.target.value)}
+              required
+            />
+            <button type="submit" className="solid-btn">SIGN IN</button>
+          </form>
+        </div>
+        
+        {/* Overlay Container (Right side graphic) */}
+        <div className="overlay-container">
+          <div className="overlay">
+            <div className="overlay-panel overlay-left">
+              <h1>Welcome Back!</h1>
+              <p>To keep connected with us please login with your personal info</p>
+              <button className="ghost-btn" onClick={() => setIsRightPanelActive(false)}>Sign In</button>
+            </div>
+            <div className="overlay-panel overlay-right">
+              <h1>Hello, Friend!</h1>
+              <p>Register with your personal details to use all of the site features</p>
+              <button className="ghost-btn" onClick={() => setIsRightPanelActive(true)}>SIGN UP</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
