@@ -17,6 +17,7 @@ export default function Dashboard() {
   const [assigningRfidFor, setAssigningRfidFor] = useState(null);
   const [rfidInput, setRfidInput] = useState('');
   const [roomInput, setRoomInput] = useState('');
+  const [wardenRfidInput, setWardenRfidInput] = useState('');
   
   // Real-time Mess Voting State
   const [menuVotes, setMenuVotes] = useState({ pizza: 0, pasta: 0, burger: 0, salad: 0 });
@@ -164,6 +165,21 @@ export default function Dashboard() {
     }
   };
 
+  const handleAssignWardenRfid = async (e) => {
+    e.preventDefault();
+    if (!user) return;
+    try {
+      await setDoc(doc(db, "users", user.uid), {
+        rfidTag: wardenRfidInput.toUpperCase(),
+        rfidStatus: "assigned"
+      }, { merge: true });
+      setWardenRfidInput('');
+      alert("Master Access Card successfully linked to your Warden Profile!");
+    } catch (error) {
+      alert("Error syncing master warden tag.");
+    }
+  };
+
   if (loading) return <div style={{ color: 'white', background: '#0f172a', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Connecting to Realtime Firebase Protocol...</div>;
   if (!userData) return <div style={{ color: 'white', background: '#0f172a', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Checking user profile matrix...</div>;
 
@@ -250,6 +266,17 @@ export default function Dashboard() {
               ))}
             </div>
           )}
+        </div>
+
+        {/* Warden Master Key Linking */}
+        <div style={{ marginTop: '40px', background: 'rgba(139, 92, 246, 0.1)', padding: '24px', borderRadius: '12px', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
+          <h2 style={{ color: '#c4b5fd', margin: '0 0 10px 0' }}>Warden Universal Master Key</h2>
+          <p style={{ color: '#e2e8f0', margin: '0 0 15px 0' }}>Assign an RFID card to your own Warden credentials. Your master card will automatically unlock all relay gates.</p>
+          <form onSubmit={handleAssignWardenRfid} style={{ display: 'flex', gap: '10px' }}>
+            <input type="text" placeholder="Scan/Type Warden RFID String" value={wardenRfidInput} onChange={(e) => setWardenRfidInput(e.target.value)} style={{ padding: '12px', borderRadius: '6px', border: 'none', outline:'none', minWidth: '300px', background: 'rgba(0,0,0,0.3)', color: 'white' }} required />
+            <button type="submit" style={{ padding: '12px 24px', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>Link to My Warden Profile</button>
+          </form>
+          {userData?.rfidTag && <p style={{color: '#10b981', marginTop: '15px', fontWeight: 'bold', fontFamily: 'monospace'}}>✅ Active Universal Key: {userData.rfidTag}</p>}
         </div>
 
         {/* Live Directory */}
