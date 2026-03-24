@@ -131,7 +131,10 @@ void loop() {
     Serial.println("WiFi disconnected... Waiting for reconnect.");
   }
 
-  // Halt reading the identical card multiple times natively to prevent relay spam
+  // 1. Halt reading the identical card multiple times natively to prevent relay spam
   mfrc522.PICC_HaltA();
+  // 2. CRITICAL: Stop encryption to flush the RC522 buffer. If omitted, the scanner turns permanently deaf after 1 scan!
+  mfrc522.PCD_StopCrypto1(); 
+  
   delay(1500); 
 }
