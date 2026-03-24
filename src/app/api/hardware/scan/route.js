@@ -46,11 +46,45 @@ export async function POST(request) {
     await addDoc(collection(db, "attendanceLogs"), {
       studentId: studentDoc.id,
       studentName: student.name,
-      parentNumber: student.parentNumber || "none",
+      parentNumber: student.parentPhone || "none", // Updated to explicitly match the dashboard state variable 
       action: newStatus ? "ENTER" : "EXIT",
       hardwareTagId: rfid_tag_id,
       timestamp: new Date()
     });
+
+    // -- TELEGRAM BOT INTEGRATION --
+    // Only fire if the parent specified a valid Telegram Chat ID in their profile setup
+    if (student.parentPhone && student.parentPhone.toLowerCase() !== "none") {
+      try {
+        const actionWord = newStatus ? "ENTERED" : "LEFT";
+        const timeString = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+        
+        // Use Markdown formatting natively inside Telegram! 
+        const telegramPayload = `🔔 *Hostel Gate Alert*\nYour child, *${student.name}*, has successfully *${actionWord}* the hostel securely at ${timeString}.`;
+        
+        // ⚠️ REPLACE THIS STRING WITH YOUR BOTFATHER API TOKEN! Example: "123456789:ABCDEF..."
+        const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "YOUR_BOTFATHER_TOKEN_HERE";
+        
+        // The Telegram send endpoint. 
+        const telegramUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+        
+        // Fire seamlessly natively from Node.js
+        await fetch(telegramUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+             chat_id: student.parentPhone, 
+             text: telegramPayload,
+             parse_mode: "Markdown"
+          })
+        });
+        
+        console.log("Transmission securely routed directly to Telegram Server!");
+      } catch (err) {
+        console.error("Failed to route Telegram Push dynamically:", err);
+      }
+    }
+    // -- END TELEGRAM INTEGRATION --
 
     // Write a Visual Live Terminal Log for the Warden Dashboard
     await addDoc(collection(db, "hardwareLogs"), {
