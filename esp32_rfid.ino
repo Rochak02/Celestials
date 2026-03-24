@@ -5,11 +5,11 @@
 // IMPORTANT: You must install the ArduinoJson library in Arduino IDE to parse the server's HTTP JSON response!
 // #include <ArduinoJson.h> (Optional if we just do a basic string match, which saves memory. Let's use basic String matching for "GRANT_ACCESS" to be extremely fast and robust for ESP32).
 
-// --- PIN DEFINITIONS FOR ESP32-C6 ---
-// Customize these directly based on the pin diagram you have for your specific ESP32-C6!
-#define RST_PIN         15  
-#define SS_PIN          18
-#define RELAY_PIN       4   // The GPIO pin physically wired to the Relay Module
+// --- PIN DEFINITIONS FOR Seeed Studio XIAO ESP32-C6 ---
+// Wired explicitly to match your uploaded D-pad pinout diagram
+#define RST_PIN         16  // Connect RC522 RST to D6 (GPIO16)
+#define SS_PIN          17  // Connect RC522 SDA (SS) to D7 (GPIO17)
+#define RELAY_PIN       21  // Connect Relay trigger to D3 (GPIO21)
 
 MFRC522 mfrc522(SS_PIN, RST_PIN);
 
