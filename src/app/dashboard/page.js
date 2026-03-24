@@ -324,6 +324,7 @@ export default function Dashboard() {
                   <th style={{ padding: '15px' }}>Parent Alert Info</th>
                   <th style={{ padding: '15px' }}>RFID Gateway Tag</th>
                   <th style={{ padding: '15px' }}>Room Assig.</th>
+                  <th style={{ padding: '15px' }}>Manual Control</th>
                 </tr>
               </thead>
               <tbody>
@@ -343,6 +344,20 @@ export default function Dashboard() {
                     </td>
                     <td style={{ padding: '15px', fontFamily: 'monospace', color: s.rfidStatus === 'assigned' ? '#38bdf8' : '#64748b' }}>{s.rfidTag || 'UNASSIGNED'}</td>
                     <td style={{ padding: '15px', fontWeight: 'bold' }}>{s.roomNo ? `R. ${s.roomNo}` : '-'}</td>
+                    <td style={{ padding: '15px' }}>
+                      {assigningRfidFor === s.id ? (
+                        <form onSubmit={(e) => handleAssignRfid(e, s.id)} style={{ display: 'flex', gap: '6px' }}>
+                          <input type="text" placeholder="Hex ID" value={rfidInput} onChange={(e) => setRfidInput(e.target.value)} style={{ padding: '6px', width: '90px', borderRadius: '4px', border: 'none', outline: 'none' }} required />
+                          <input type="text" placeholder="Room" value={roomInput} onChange={(e) => setRoomInput(e.target.value)} style={{ padding: '6px', width: '50px', borderRadius: '4px', border: 'none', outline: 'none' }} required />
+                          <button type="submit" style={{ padding: '6px 12px', background: '#10b981', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>✓</button>
+                          <button type="button" onClick={() => setAssigningRfidFor(null)} style={{ padding: '6px 12px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>X</button>
+                        </form>
+                      ) : (
+                        <button onClick={() => setAssigningRfidFor(s.id)} style={{ padding: '8px 14px', background: 'rgba(255,255,255,0.1)', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', transition: '0.2s' }}>
+                           {s.rfidStatus === 'assigned' ? 'Force Edit' : 'Assign Code'}
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
