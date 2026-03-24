@@ -63,7 +63,7 @@ export async function POST(request) {
         const telegramPayload = `🔔 *Hostel Gate Alert*\nYour child, *${student.name}*, has successfully *${actionWord}* the hostel securely at ${timeString}.`;
         
         // ⚠️ REPLACE THIS STRING WITH YOUR BOTFATHER API TOKEN! Example: "123456789:ABCDEF..."
-        const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "YOUR_BOTFATHER_TOKEN_HERE";
+        const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8448715814:AAFhBMWHLiJPk6aRIkw-ufOp9g0uXLJIVIE";
         
         // The Telegram send endpoint. 
         const telegramUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
