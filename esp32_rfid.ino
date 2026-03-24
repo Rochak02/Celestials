@@ -11,6 +11,11 @@
 #define SS_PIN          17  // Connect RC522 SDA (SS) to D7 (GPIO17)
 #define RELAY_PIN       21  // Connect Relay trigger to D3 (GPIO21)
 
+// Explicitly defining hardware SPI pins to bypass Arduino IDE Board Profile defaults
+#define SCK_PIN         19  // Connect to D8
+#define MISO_PIN        20  // Connect to D9
+#define MOSI_PIN        18  // Connect to D10
+
 MFRC522 mfrc522(SS_PIN, RST_PIN);
 
 // --- WIFI & SERVER ENDPOINT ---
@@ -23,18 +28,34 @@ const char* serverUrl = "http://YOUR_LOCAL_IP:3000/api/hardware/scan";
 
 void setup() {
   Serial.begin(115200);   
-  while (!Serial);        
+  // Optional delay to give the native USB time to securely connect to the PC
+  delay(2000); 
+  
+  Serial.println(F("\n=============================="));
+  Serial.println(F("ESP32-C6 Booting Up..."));
+  Serial.println(F("=============================="));
   
   // Setup the Relay Actuator Pin
   pinMode(RELAY_PIN, OUTPUT);
   digitalWrite(RELAY_PIN, LOW); // Assumes LOW is locked for typical Active-High relays. Flip to HIGH if Active-Low!
   
-  SPI.begin();            
+  Serial.println(F("Configuring Explicit Hardware SPI Bus..."));
+  SPI.begin(SCK_PIN, MISO_PIN, MOSI_PIN, SS_PIN);            
+  
+  Serial.println(F("Waking up MFRC522 Scanner..."));
   mfrc522.PCD_Init();     
+  delay(4); // short delay to let PCD boot
+
+  // STRICT HARDWARE DIAGNOSTIC CHECK
+  Serial.print(F("Scanner Firmware Target: 0x"));
+  byte v = mfrc522.PCD_ReadRegister(mfrc522.VersionReg);
+  Serial.println(v, HEX);
+  if (v == 0x00 || v == 0xFF) {
+    Serial.println(F("CRITICAL ERROR: Communication failure! SPI pins are wrong, wires are loose, or the RC522 Scanner is completely dead/unpowered. System halting."));
+    while(1); // Completely halt execution to stop native USB from crashing
+  }
   
-  Serial.println(F("Initializing ESP32C6 Environment..."));
-  Serial.println(F("Connecting to WiFi..."));
-  
+  Serial.println(F("Hardware Authorized. Connecting to WiFi..."));
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
